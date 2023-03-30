@@ -52,7 +52,7 @@ The response will be a JSON object containing information about active crawl cyc
 To initiate a new crawl, send a `POST` request to `localhost:8084/crawl`. The request body should include the following information:
 
 - "url": the URL of the website to crawl (required)
-- "return_results": a boolean value indicating whether the results of the crawl should be returned to the requester (optional; defaults to true)
+- "return_results": a boolean value indicating whether the results of the crawl should be returned to the requester (optional; defaults to false)
 - "write_to_database": a boolean value indicating whether the results of the crawl should be written to the database (optional; defaults to true)
 
 This request should include an API key in the header for authentication.
@@ -103,7 +103,7 @@ Here are some example requests using `curl`:
 
 Starting a crawl cycle:
 
-```json
+```curl
 curl -X POST
 -H "Authorization: Bearer <
 ```
