@@ -105,5 +105,5 @@ Starting a crawl cycle:
 
 ```curl
 curl -X POST
--H "Authorization: Bearer <
+-H "Authorization: Bearer <API_KEY>
 ```
