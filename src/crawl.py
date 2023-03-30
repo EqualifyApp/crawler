@@ -9,14 +9,37 @@ from scrapy.crawler import CrawlerProcess
 from twisted.internet.error import DNSLookupError, TCPTimedOutError
 
 
-logger = logging.getLogger(__name__)
+# Set up logger: "A11yLogger"
+logger = logging.getLogger("A11y🪵 ")
 
-# Postgre connection info
-db_host = "localhost"
-db_port = 8432
-db_user = "a11yPython"
-db_password = "SnakeInTheWeb"
-db_name = "a11y"
+# Check if logger already has handlers
+if not logger.hasHandlers():
+    logger.setLevel(logging.DEBUG)
+
+    # Create console handler and set level to info
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+
+    # Create formatter and add it to the handler
+    formatter = logging.Formatter('%(asctime)s - %(name)s - [%(levelname)s] - %(message)s')
+    ch.setFormatter(formatter)
+
+    # Add the console handler to the logger
+    logger.addHandler(ch)
+
+
+# Postgres connection info
+db_host = os.environ.get("DB_HOST", "localhost")
+db_port = int(os.environ.get("DB_PORT", "8432"))
+db_user = os.environ.get("DB_USER", "a11yPython")
+db_password = os.environ.get("DB_PASSWORD", "SnakeInTheWeb")
+db_name = os.environ.get("DB_NAME", "a11y")
+
+
+# TODO: Create API endpoint POST /crawl
+# TODO: Enable default API key of CrawlTheWorld if the docker env var of API_KEY is not set
+
+
 
 # Connect to database
 conn = psycopg2.connect(host=db_host, port=db_port, user=db_user, password=db_password, database=db_name)
@@ -32,6 +55,10 @@ if not domain:
 
 # Update crawl status for selected domain
 cur.execute("UPDATE meta.domains SET crawl = FALSE, last_crawl_at = now() WHERE domain = %s", (domain[0],))
+
+# TODO: Create function to crawl sitemaps
+# TODO: Enable sitemap detection. If the URL to crawl is a sitemap, then limit URLs captured to those on the sitemap
+# TODO: Enable auto-handling of parent/child sitemaps
 
 class A11ySpider(Spider):
     name = "A11ySpider"
@@ -66,6 +93,8 @@ class A11ySpider(Spider):
                 link = re.sub(r"#.*$", "", link).rstrip("/")
                 if not re.search(r'tel:|mailto:| ', link):
                     # Determine the file type of the URL based on its extension
+                    # OPTIMIZE: Sorting of response urls
+                    # IDEA: Break database functions into own script
                     file_extension = link.split(".")[-1].lower()
                     if file_extension in ["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "xml", "csv", "zip", "pages"]:
                         # Add document URLs to the staging.doc_urls table
@@ -119,6 +148,9 @@ class A11ySpider(Spider):
         url = failure.request.url
         python_uuid = str(failure.request.meta["python_uuid"])
         source_url = failure.request.meta.get("source_url")
+# BROKEN: Adding to broken_urls table
+# TODO: Add to problem_urls table
+# TODO: Consolidate problem and bad urls tables into problem_urls
 
         # Add naughty URLs to the staging.bad_urls table
         if not url.startswith("http"):
@@ -144,7 +176,9 @@ class A11ySpider(Spider):
 # Mote info:    https://docs.scrapy.org/en/latest/topics/settings.html
 #
 # Testing out Autothrottle: https://docs.scrapy.org/en/latest/topics/autothrottle.html#autothrottle-algorithm
-#
+# REVIEW: Settings need cleaning up
+# IDEA: Settings via Docker Env Vars
+# IDEA: Settings via new API Endpoint PUT?
 process = CrawlerProcess(settings={
     "BOT_NAME": "A11yCheck Bot",            # Name of Bot
     #"DOWNLOAD_DELAY": 1,                   # Minimum seconds to delay between requests
