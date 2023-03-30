@@ -1,3 +1,8 @@
+#   Default Ignores
+.DS_Store
+.nova
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
