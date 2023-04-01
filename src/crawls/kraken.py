@@ -1,50 +1,24 @@
-import json
-import subprocess
+import os
+import threading
 from logger.config import logger
-from flask import jsonify
 from database.select import next_sitemap_url
-from database.update import update_crawl_status
-from database.insert import record_new_crawl
 from utils.make import new_uuid
+from database.insert import record_new_crawl
 from utils.check import is_url_sitemap
-from crawls.spiders import start_cartocrawler
+from crawls.spiders.cartocrawler import CartoCrawler
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
 
-This script takes the json body payload of 'spider' and executes the approperiate function
+def run_spider_in_thread(start_url):
+    process = CrawlerProcess(get_project_settings())
+    process.crawl(CartoCrawler, start_url=start_url)
+    process.start(stop_after_crawl=True)  # This is the correct place for the parameter
 
-
-
-def spider_finder(payload):
-
-
-    # Get the spider parameter from the payload
-    spider_type = payload.get('spider')
-
-    if spider_type == 'cartocrawler':
-        response_message = 'CartoCrawler has been started!'
-        logger.info(f' 🕷️ 🚀 CartoCrawler')
-        launch_cartocrawler()
-
-    # Spinocracy
-    # INFO Search for all URLs on a domain, not just the sitemap.
-    elif spider_type == 'spinocracy':
-        response_message = 'Spinocracy has started!'
-        logger.info(f' 🕷️ 🚀 Spinnocracy')
-        launch_spinocracy()
-
-    # No defined spider or other error
-    else:
-        # Return an error message if the kraken_type is invalid
-        error_msg = {'error': 'Bad Spider. Check spider variable. '}
-        logger.error(f' 🕷️ 💀 Spider selection failed. Check spider_type ')
-        response = jsonify(error_msg)
-        response.status_code = 400
-        return response
-
-
-def setup_cartocrawler():
+def setup_kraken_cartocrawler():
     sitemap, domain_id = next_sitemap_url()
     crawl_uuid = new_uuid()
-    actor_id = 'cartocrawler'
+    logger.debug(f'New UUID Generated: {crawl_uuid} ')
+    actor_id = 2
     started_by = 'request'
     crawl_type = 'kraken'
     start_url = sitemap
@@ -52,23 +26,25 @@ def setup_cartocrawler():
 
     # Crawl Create Error
     if not crawl_create_status:
-        logger.error('Cartocrawler unable to launch. Check launch_cartocrawler')
-
+        logger.error('🦑 Cartocrawler unable to launch. Check with the Kraken')
+        return False
     # Crawl Created Successfully
     elif crawl_create_status:
-        logger.info('New Crawl Created, Checking Sitemap')
+        logger.info('🦑 New Crawl Created, Checking Sitemap')
         if is_url_sitemap(sitemap):
-            start_cartocrawler(crawl_uuid, start_url)
-            logger.info(f'Sitemap is good. Letting CartoCrawler know...')
+            logger.info(f'🦑 Sitemap is good. Letting CartoCrawler know...')
+            t = threading.Thread(target=run_spider_in_thread, args=(start_url,))
+            t.start()
         else:
             logger.info(f'{sitemap} is not a sitemap. Set up a loop?')
 
     # Other Error Logged
     else:
-        logger.error('CartoCrawler Failure. See launch_cartocrawler')
+        logger.error('🦑 CartoCrawler Failure. Check with the Kraken')
 
 
 
-
+def setup_kraken_spinnocracy():
+    logger.error('🦑 Help me Jim! I\'m lost in the Kraken!  ')
 
 

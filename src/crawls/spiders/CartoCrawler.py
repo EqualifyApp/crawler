@@ -1,14 +1,15 @@
+import os
 import scrapy
 from scrapy.spiders import SitemapSpider
-from logger.config import logger
-from database.update import update_crawl_status, update_crawl_user_agent, update_crawl_complete
+# Database Operations
 from database.insert import record_crawled_url
+from database.update import update_crawl_status, update_crawl_user_agent, update_crawl_complete
+# Utils & Configs
 from utils.make import get_headers, get_spidey_senses
-from utils.check import should_sitemap_continue
-from crawls.kraken import setup_cartocrawler
-
+from logger.config import logger
 
 class CartoCrawler(SitemapSpider):
+    name = "CartoCrawler"
     """
     A Scrapy spider for crawling sitemaps.
 
@@ -27,8 +28,7 @@ class CartoCrawler(SitemapSpider):
         Starts the CartoCrawler with the given crawl UUID and start URL.
     parse(response)
         Parses the given response and records the crawled URL.
-    cartocrawler_future()
-        Determines what the CartoCrawler should do next.
+
     """
     total_urls = 0
     new_urls = 0
@@ -71,7 +71,8 @@ class CartoCrawler(SitemapSpider):
         logger.info(f'{spider} senses defined')
 
         # Add User Agent to Crawl Info
-        if execute_update(update_crawl_user_agent, user_agent_id, crawl_uuid):
+
+        if update_crawl_user_agent(user_agent_id, crawl_uuid):
             logger.info(f'Crawl {crawl_uuid} User Agent Recorded')
         else:
             logger.error(f'Crawl {crawl_uuid} Failed to Record')
@@ -86,6 +87,11 @@ class CartoCrawler(SitemapSpider):
 
         # Crawl is done, log the results
         logger.info(f'{self.total_urls} crawled, {self.new_urls} new URLs found, {self.updated_urls} URLs updated')
+    # Set Vars for What's Next
+        spider = 'cartocrawler'
+        crawl_type = 'kraken'
+        kraken_whats_next(self, spider, crawl_type)
+    # End of Script
 
         # Sitemap Complete
         if update_crawl_complete(crawl_uuid, self.new_urls, self.updated_urls):
@@ -124,17 +130,20 @@ class CartoCrawler(SitemapSpider):
         elif action == 'update':
             self.updated_urls += 1
 
-    def cartocrawler_future(self):
-        """
-        Determines the next action for CartoCrawler.
-
-        If there are more sitemaps to crawl, calls the setup_cartocrawler() function.
-        Otherwise, logs that there are no more sitemaps to crawl and terminates the crawl.
-        """
-        # What should cartocrawler do next?
-        if should_sitemap_continue():
-            logger.info('More sitemaps to crawl, lets go again!!! ')
-            setup_cartocrawler()
+    def kraken_whats_next(self):
+        spider = 'cartocrawler'
+        crawl_type = 'kraken'
+        logger.info(f'Determining whats next for the {crawl_type}\'s {spider}... ')
+        if crawl_type == 'kraken':
+            # What should the Kraken do
+            logger.info(f'This looks to be a {crawl_type}\'s {spider} ')
+            if should_sitemap_continue():
+                logger.info('More sitemaps for the {crawl_type}, lets go again!!! ')
+                setup_kraken_cartocrawler()
+            else:
+                logger.info('No more sitemaps to crawl. Calling it a day... ')
+        elif crawl_type == 'harpoon':
+            logger.warning(f'Harpoon asking for help! See manager... ')
+        # What to do if crawl_type doesn't match
         else:
-            logger.info('No more sitemaps to crawl. Calling it a day... ')
-
+            logger.error(f'I\'m lost. Help me! See my manager... ')

@@ -30,7 +30,7 @@ def execute_select(query, params=None, fetchone=True):
     # Fetch the results if requested
     result = None
     if fetchone:
-        result = cur.fetchone()[0] if cur.rowcount > 0 else None
+        result = cur.fetchone() if cur.rowcount > 0 else None
     else:
         result = cur.fetchall()
 
@@ -53,6 +53,7 @@ def next_sitemap_url():
         LIMIT 1;
     """
     result = execute_select(query)
+    # print(f"Result from query: {result}")  # Add this line to see the result
     if result:
         url, domain_id = result
         logger.info(f'Sitemap Selected for Domain {domain_id}: {url}')
@@ -70,6 +71,7 @@ def get_useragent():
             LIMIT 1;
         """
         result = execute_select(query)
+        logger.debug
         if result:
             user_agent, user_agent_id = result
             logger.info(f'Useragent Selected: {user_agent}')

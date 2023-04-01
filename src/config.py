@@ -6,7 +6,7 @@ BOT_ID = {
 }
 
 
-
+SITEMAP_FREQUENCY = 3600
 # Default Spider Settings
 # You can override these in the spider file. if desired. If no value is set in the spider file, the defaults below are used.
 

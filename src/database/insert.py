@@ -28,7 +28,7 @@ def execute_insert(query, params=None, fetchone=True):
     # Fetch the results if requested
     result = None
     if fetchone:
-        result = cur.fetchone()[0] if cur.rowcount > 0 else None
+        result = cur.fetchone() if cur.rowcount > 0 else None
     else:
         result = cur.fetchall()
 
@@ -53,12 +53,23 @@ def record_new_crawl(actor_id, started_by, crawl_uuid, crawl_type, domain_id, st
             %s, 'new', %s,
             %s, %s, %s, %s
         )
+        RETURNING crawl_uuid
         """
-    try:
-        execute_insert(query, (actor_id, started_by, crawl_uuid, crawl_type, domain_id, start_url))
+    result = execute_insert(query, (actor_id, started_by, crawl_uuid, crawl_type, domain_id, start_url))
+    logger.debug(f'Record New Crawl Output: {result} ')
+    if result[0] == crawl_uuid:
+        logger.debug(f' Crawl {crawl_uuid} created... ')
         return True
-    except:
+    else:
+        logger.error(f'Record New Crawl had an issue with: {crawl_uuid} ')
         return False
+
+
+#    try:
+ #       execute_insert(query, (actor_id, started_by, crawl_uuid, crawl_type, domain_id, start_url))
+ #       return True
+ #   except:
+ #       return False
 
 
 
@@ -69,14 +80,13 @@ def record_crawled_url(url, crawl_uuid, source_url):
             discovery_crawl_uuid,
             source_url,
             discovery_source_url,
-            last_crawled_at,
-            first_source_url)
-        VALUES (%s, %s, %s, %s, %s, NOW(), %s)
+            last_crawled_at)
+        VALUES (%s, %s, %s, %s, %s, NOW())
         ON CONFLICT (url) DO UPDATE SET last_crawled_at = NOW()
         RETURNING CASE WHEN xmax = 0 THEN 'add' ELSE 'update' END;
     """
     try:
-        result = execute_insert(query, (url, crawl_uuid, crawl_uuid, source_url, source_url, source_url))
+        result = execute_insert(query, (url, crawl_uuid, crawl_uuid, source_url, source_url))
         action = result[0] if result else None
         logger.info(f'URL Recorded: {url}')
         return action
