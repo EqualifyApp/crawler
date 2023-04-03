@@ -27,7 +27,9 @@ DEFAULT_SPIDEY_SENSES = {
     "AUTOTHROTTLE_DEBUG": False,             # Debug logs on Autothrottle
     "LOG_LEVEL": "INFO",                   # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
     #"LOG_FILE": "logs/crawl.log",          # Where to save logs
-    "LOG_ENABLED": True                     # Enable logging
+    "LOG_ENABLED": True,                     # Enable logging
+    "REQUEST_FINGERPRINTER_IMPLEMENTATION": 'scrapy.fingerprint.NoDupeUrlFingerprint'
+
 }
 
 
