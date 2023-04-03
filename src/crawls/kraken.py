@@ -1,18 +1,18 @@
 import os
-import threading
-from logger.config import logger
-from database.select import next_sitemap_url
-from utils.make import new_uuid
-from database.insert import record_new_crawl
-from utils.check import is_url_sitemap
-from crawls.spiders.cartocrawler import CartoCrawler
-from scrapy.crawler import CrawlerProcess
+# Scrapy Imports
+import scrapy
 from scrapy.utils.project import get_project_settings
+# Database Operations
+from database.select import next_sitemap_url
+from database.insert import record_new_crawl
+# Utilities
+from utils.make import new_uuid
+from utils.check import is_url_sitemap
+from logger.config import logger
+from crawls.spiders.cartocrawler import start_cartocrawler
+from scrapy.crawler import CrawlerProcess
 
-def run_spider_in_thread(start_url):
-    process = CrawlerProcess(get_project_settings())
-    process.crawl(CartoCrawler, start_url=start_url)
-    process.start(stop_after_crawl=True)  # This is the correct place for the parameter
+
 
 def setup_kraken_cartocrawler():
     sitemap, domain_id = next_sitemap_url()
@@ -33,8 +33,10 @@ def setup_kraken_cartocrawler():
         logger.info('🦑 New Crawl Created, Checking Sitemap')
         if is_url_sitemap(sitemap):
             logger.info(f'🦑 Sitemap is good. Letting CartoCrawler know...')
-            t = threading.Thread(target=run_spider_in_thread, args=(start_url,))
-            t.start()
+            site_url = start_url
+
+            start_cartocrawler(start_url, crawl_uuid)
+            return True
         else:
             logger.info(f'{sitemap} is not a sitemap. Set up a loop?')
 
@@ -42,9 +44,24 @@ def setup_kraken_cartocrawler():
     else:
         logger.error('🦑 CartoCrawler Failure. Check with the Kraken')
 
+def kraken_whats_next(crawl_type):
+    spider = 'cartocrawler'
+    logger.info(f'Determining whats next for the {crawl_type}\'s {spider}... ')
+    if crawl_type == 'kraken':
+        # What should the Kraken do
+        logger.info(f'This looks to be a {crawl_type}\'s {spider} ')
+        if should_sitemap_continue():
+            logger.info('More sitemaps for the {crawl_type}, lets go again!!! ')
+            setup_kraken_cartocrawler()
+        else:
+            logger.info('No more sitemaps to crawl. Calling it a day... ')
+    elif crawl_type == 'harpoon':
+        logger.warning(f'Harpoon asking for help! See manager... ')
+    # What to do if crawl_type doesn't match
+    else:
+        logger.error(f'I\'m lost. Help me! See my manager... ')
 
 
 def setup_kraken_spinnocracy():
-    logger.error('🦑 Help me Jim! I\'m lost in the Kraken!  ')
-
+    logger.error('🦑 Help me Jim! I\'m lost in the Kraken')
 
