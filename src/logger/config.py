@@ -48,14 +48,14 @@ Variables:
 
 The `logging_config` module exports the following variables:
 
-- `A11y🪵`: The default logger instance for the A11y🪵.
+- `A11y🪵 `: The default logger instance for the A11y🪵.
 
 """
 
 import logging
 
 # Set up logger: "A11yLogger"
-logger = logging.getLogger("A11y🪵")
+logger = logging.getLogger("A11y🪵 ")
 
 # Check if logger already has handlers
 if not logger.hasHandlers():
@@ -66,7 +66,7 @@ if not logger.hasHandlers():
     ch.setLevel(logging.DEBUG)
 
     # Create formatter and add it to the handler
-    formatter = logging.Formatter('%(asctime)s - %(name)s  - [%(levelname)s] - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - [%(levelname)s] - %(message)s')
     ch.setFormatter(formatter)
 
     # Add the console handler to the logger
@@ -75,4 +75,4 @@ if not logger.hasHandlers():
 def configure_logger():
      # Use the logger from logging_config.py
      global logger
-     logger = logging.getLogger("A11y🪵")
+     logger = logging.getLogger("A11y🪵 ")

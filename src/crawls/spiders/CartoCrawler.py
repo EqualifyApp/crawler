@@ -1,4 +1,5 @@
 import os
+import importlib
 from scrapy.crawler import CrawlerProcess
 from scrapy.spiders import SitemapSpider
 # Database Operations
@@ -7,12 +8,12 @@ from database.update import update_crawl_status, update_crawl_user_agent, update
 # Utils & Configs
 from utils.make import get_headers, get_spidey_senses
 from logger.config import logger
-from crawls.kraken import kraken_whats_next
-
-
+# Log Emoji: 🕸️🕷️🗺️
 
 def start_cartocrawler(crawl_uuid, start_url):
     carto_crawler = CartoCrawler(start_url=start_url, crawl_uuid=crawl_uuid)
+
+    logger.debug(f'🕸️🕷️🗺️ Initializing CartoCrawler instance')
 
     # Update Crawl Status to queued
     status = 'queued'
@@ -55,17 +56,24 @@ def start_cartocrawler(crawl_uuid, start_url):
         **carto_crawler.spider_settings
     })
 
+    logger.debug(f'🕸️🕷️🗺️ CrawlerProcess created')
+
     # Start the CrawlerProcess
     process.crawl(carto_crawler.__class__, start_url=start_url, crawl_uuid=crawl_uuid)
+    logger.info(f'🕸️🕷️🗺️ Crawler process started for {start_url}')
     process.start()
+
+    logger.debug(f'🕸️🕷️🗺️ CrawlerProcess completed')
 
     # Crawl is done, log the results
     logger.info(f'🕸️🕷️🗺️ {carto_crawler.total_urls} crawled, {carto_crawler.new_urls} new URLs found, {carto_crawler.updated_urls} URLs updated')
 
     # Set Vars for What's Next
     crawl_type = 'kraken'
-    kraken_whats_next(crawl_type)
-    # End of Script
+    # Dynamically import the kraken_whats_next function to avoid circular imports
+    kraken_module = importlib.import_module('crawls.kraken')
+    kraken_whats_next_func = getattr(kraken_module, 'kraken_whats_next')
+    kraken_whats_next_func(crawl_type)
 
 
 
@@ -80,18 +88,19 @@ class CartoCrawler(SitemapSpider):
         self.new_urls = 0
         self.updated_urls = 0
 
+        logger.debug(f'🕸️🕷️🗺️ Initializing CartoCrawler instance') # Added Log
+
         # Sitemap Complete
         if update_crawl_complete(crawl_uuid, self.new_urls, self.updated_urls):
-            # Sitemap Complete
-            if update_crawl_complete(crawl_uuid, self.new_urls, self.updated_urls):
-                logger.info(f'Crawl {crawl_uuid} successfully recorded')
-            else:
-                logger.error(f'Crawl {crawl_uuid} NOT RECORDED')
+            logger.info(f'🕸️🕷️🗺️ Crawl {crawl_uuid} successfully recorded')
+        else:
+            logger.error(f'🕸️🕷️🗺️ Crawl {crawl_uuid} NOT RECORDED')
+
 
 
     def parse(self, response):
         # Log Found URL
-        logger.debug(f'Found URL: {response.url}')
+        logger.debug(f'🕸️🕷️🗺️ Found URL: {response.url}')
 
         # Set variables for recording crawled url
         url = response.url
@@ -101,10 +110,9 @@ class CartoCrawler(SitemapSpider):
         # Record crawled URL
         action = record_crawled_url(response.url, self.crawl_uuid, response.request.url)
 
-        # Update counters
         if action == 'add':
+            logger.info(f'🕸️🕷️🗺️ URL {response.url} added to crawled urls')
             self.new_urls += 1
         elif action == 'update':
+            logger.info(f'🕸️🕷️🗺️ URL {response.url} already in crawled urls')
             self.updated_urls += 1
-
-
