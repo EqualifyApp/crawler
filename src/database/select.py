@@ -71,7 +71,7 @@ def get_useragent():
             LIMIT 1;
         """
         result = execute_select(query)
-        logger.debug
+        logger.debug(f'User Agent result from query: {result}')
         if result:
             user_agent, user_agent_id = result
             logger.info(f'Useragent Selected: {user_agent}')
