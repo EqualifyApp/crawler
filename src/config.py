@@ -28,7 +28,7 @@ DEFAULT_SPIDEY_SENSES = {
     "LOG_LEVEL": "INFO",                   # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
     #"LOG_FILE": "logs/crawl.log",          # Where to save logs
     "LOG_ENABLED": True,                     # Enable logging
-    "REQUEST_FINGERPRINTER_IMPLEMENTATION": 'scrapy.fingerprint.NoDupeUrlFingerprint'
+    "REQUEST_FINGERPRINTER_IMPLEMENTATION": '2.7'
 
 }
 
