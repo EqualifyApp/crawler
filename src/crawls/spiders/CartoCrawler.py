@@ -1,6 +1,6 @@
 import os
 import importlib
-from scrapy.crawler import CrawlerRunner
+from scrapy.crawler import CrawlerProcess
 from scrapy.spiders import SitemapSpider
 # Database Operations
 from database.insert import record_crawled_url
@@ -21,13 +21,12 @@ class CartoCrawler(SitemapSpider):
         self.start_url = start_url
         self.crawl_uuid = crawl_uuid
 
-
         logger.debug(f'🕸️🕷️🗺️ Initializing CartoCrawler instance')
 
-# Get Headers
-        spider = 'cartocrawler'
-        headers, user_agent_id = get_headers(spider)
-        logger.debug(f'🕸️🕷️🗺️ {spider} headers set')
+        # Get Headers
+        # spider = 'cartocrawler'
+        # headers, user_agent_id = get_headers(spider)
+        # logger.debug(f'🕸️🕷️🗺️ {spider} headers set')
 
         # Define spider-specific settings
         spidey_senses = {
@@ -46,10 +45,8 @@ class CartoCrawler(SitemapSpider):
         # Add User Agent to Crawl Info
         if update_crawl_user_agent(user_agent_id, crawl_uuid):
             logger.debug(f'🕸️🕷️🗺️ Crawl {crawl_uuid} User Agent Recorded')
-
         else:
             logger.error(f'🕸️🕷️🗺️ Crawl {crawl_uuid} Failed to Record')
-
 
     def parse(self, response):
         # Log Found URL
@@ -62,18 +59,40 @@ class CartoCrawler(SitemapSpider):
 
         # Record crawled URL
         record_crawled_url(url, crawl_uuid, source_url)
-        # action = record_crawled_url(response.url, self.crawl_uuid, response.request.url)
         logger.debug(f'🕸️🕷️🗺️ URL {response.url} added to crawled urls')
 
-
     def closed(self, reason):
+
         # Sitemap Complete
-        if update_crawl_complete(self.crawl_uuid, self.new_urls, self.updated_urls):
-            logger.debug(f'🕸️🕷️🗺️ Crawl {self.crawl_uuid} successfully recorded')
+        if update_crawl_complete(self.crawl_uuid):
+            logger.debug(f'🕸️🕷️🗺️ Crawl {self.crawl_uuid} successfully completed')
         else:
             logger.error(f'🕸️🕷️🗺️ Crawl {self.crawl_uuid} NOT RECORDED')
 
+        logger.warning(f'CLOSING NOW')
         super().closed(reason)
 
+def start_cartocrawler(start_url, crawl_uuid):
+    # Get headers and user agent ID
+    headers, user_agent_id = get_headers('cartocrawler')
 
+    # Get the domain ID and record a new crawl in the database
+    sitemap, domain_id = next_sitemap_url()
+    crawl_create_status = record_new_crawl(2, 'request', crawl_uuid, 'kraken', domain_id, start_url)
 
+    if not crawl_create_status:
+        logger.error(f'🕸️🦑 Cartocrawler unable to launch. Check with the Kraken')
+        return False
+
+    # Start the crawler
+    process = CrawlerProcess(get_project_settings())
+    process.crawl(CartoCrawler, start_url=start_url, crawl_uuid=crawl_uuid, headers=headers)
+    process.start()
+
+ #   # Sitemap complete
+ #   if update_crawl_complete(crawl_uuid):
+ #       logger.debug(f'🕸️🕷️🗺️ Crawl {crawl_uuid} successfully recorded')
+ #   else:
+ #       logger.error(f'🕸️🕷️🗺️ Crawl {crawl_uuid} NOT RECORDED')
+
+  #  return True

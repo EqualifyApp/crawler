@@ -13,6 +13,7 @@ from logger.config import logger
 from scrapy.crawler import CrawlerProcess
 from crawls.spiders.cartocrawler import CartoCrawler
 
+
 # Log Emoji: 🕸️🦑
 
 def setup_kraken_cartocrawler():
@@ -27,21 +28,16 @@ def setup_kraken_cartocrawler():
 
     # Crawl Create Error
     if not crawl_create_status:
-        logger.error('🕸️🦑 Cartocrawler unable to launch. Check with the Kraken')
+        logger.error(f'🕸️🦑 Cartocrawler unable to launch. Check with the Kraken')
         return False
     # Crawl Created Successfully
     elif crawl_create_status:
-        logger.info('🕸️🦑 New Crawl Created, Checking Sitemap')
+        logger.info(f'🕸️🦑 New Crawl Created, Checking Sitemap')
         if is_url_sitemap(sitemap):
             logger.info(f'🕸️🦑 Sitemap is good. Letting CartoCrawler know...')
-            process = CrawlerProcess()
-            site_url = start_url
-            process.crawl(CartoCrawler, start_url=start_url, crawl_uuid=crawl_uuid)
-            process.start()
-
-
-            # start_cartocrawler(start_url, crawl_uuid)
-
+            crawler = CrawlerProcess(get_project_settings())
+            crawler.crawl(CartoCrawler, start_url=start_url, crawl_uuid=crawl_uuid)
+            crawler.start()
             logger.info(f'🕸️🦑 CartoCrawler started for {start_url}')
             return True
         else:
@@ -49,7 +45,8 @@ def setup_kraken_cartocrawler():
 
     # Other Error Logged
     else:
-        logger.error('🕸️🦑 CartoCrawler Failure. Check with the Kraken')
+        logger.error(f'🕸️🦑 CartoCrawler Failure. Check with the Kraken')
+
 
 
 
@@ -60,11 +57,11 @@ def kraken_whats_next(crawl_type):
         # What should the Kraken do
         logger.info(f'🕸️🦑 This looks to be a {crawl_type}\'s {spider} ')
         if should_sitemap_continue():
-            logger.info('🕸️🦑 More sitemaps for the Kraken, lets go again!!! ')
+            logger.info(f'🕸️🦑 More sitemaps for the Kraken, lets go again!!! ')
             setup_kraken_cartocrawler()
 
         else:
-            logger.info('🕸️🦑 No more sitemaps to crawl. Calling it a day... ')
+            logger.info(f'🕸️🦑 No more sitemaps to crawl. Calling it a day... ')
     elif crawl_type == 'harpoon':
         logger.warning(f'🕸️🦑 Harpoon asking for help! See manager... ')
     # What to do if crawl_type doesn't match
@@ -73,4 +70,4 @@ def kraken_whats_next(crawl_type):
 
 
 def setup_kraken_spinnocracy():
-    logger.critical('🕸️🦑 Oh no! The Kraken Spinnocracy is down...')
+    logger.critical(f'🕸️🦑 Oh no! The Kraken Spinnocracy is down...')

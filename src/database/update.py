@@ -6,13 +6,13 @@ from database.access import connection
 # Log Emoji: 🗄️🔧
 
 def execute_update(query, params=None, fetchone=True):
-   # logger.debug(f"🗄️🔧 Executing query: {query}")
-    logger.debug(f"🗄️🔧 Query parameters: {params}")
+   # logger.debug(f'🗄️🔧 Executing query: {query}'')
+   # logger.debug(f'🗄️🔧 Query parameters: {params}... ')
 
     # Connect to the database
     conn = connection()
     conn.open()
-    logger.debug("🗄️🔧 Database connection opened")
+    logger.debug(f'🗄️🔧 Database connection opened')
 
     # Create a cursor
     cur = conn.conn.cursor()
@@ -21,7 +21,7 @@ def execute_update(query, params=None, fetchone=True):
         # Execute the query
         cur.execute(query, params)
         conn.conn.commit()
-        logger.info("🗄️🔧 Query executed and committed")
+        logger.info(f'🗄️🔧 Query executed and committed')
 
         # Fetch the results if requested
         result = None
@@ -31,13 +31,13 @@ def execute_update(query, params=None, fetchone=True):
             result = cur.fetchall() or []  # return an empty list if None is returned
             logger.debug(f'🗄️🔧 Fetched results: {result}')
     except Exception as e:
-        logger.error(f"🗄️🔧 Error executing update query: {e}")
+        logger.error(f'🗄️🔧 Error executing update query: {e}')
         result = None
 
     # Close the cursor and connection
     cur.close()
     conn.close()
-    logger.debug("🗄️🔧 Cursor and connection closed")
+    logger.debug(f'🗄️🔧 Cursor and connection closed')
 
     return result
 
