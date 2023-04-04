@@ -7,10 +7,11 @@ from database.select import next_sitemap_url
 from database.insert import record_new_crawl
 # Utilities
 from utils.make import new_uuid
-from utils.check import is_url_sitemap
+from utils.check import is_url_sitemap, should_sitemap_continue
 from logger.config import logger
-from crawls.spiders.cartocrawler import start_cartocrawler
+# from crawls.spiders.cartocrawler import start_cartocrawler
 from scrapy.crawler import CrawlerProcess
+from crawls.spiders.cartocrawler import CartoCrawler
 
 # Log Emoji: 🕸️🦑
 
@@ -33,9 +34,14 @@ def setup_kraken_cartocrawler():
         logger.info('🕸️🦑 New Crawl Created, Checking Sitemap')
         if is_url_sitemap(sitemap):
             logger.info(f'🕸️🦑 Sitemap is good. Letting CartoCrawler know...')
+            process = CrawlerProcess()
             site_url = start_url
+            process.crawl(CartoCrawler, start_url=start_url, crawl_uuid=crawl_uuid)
+            process.start()
 
-            start_cartocrawler(start_url, crawl_uuid)
+
+            # start_cartocrawler(start_url, crawl_uuid)
+
             logger.info(f'🕸️🦑 CartoCrawler started for {start_url}')
             return True
         else:
@@ -44,6 +50,8 @@ def setup_kraken_cartocrawler():
     # Other Error Logged
     else:
         logger.error('🕸️🦑 CartoCrawler Failure. Check with the Kraken')
+
+
 
 def kraken_whats_next(crawl_type):
     spider = 'cartocrawler'
@@ -54,6 +62,7 @@ def kraken_whats_next(crawl_type):
         if should_sitemap_continue():
             logger.info('🕸️🦑 More sitemaps for the Kraken, lets go again!!! ')
             setup_kraken_cartocrawler()
+
         else:
             logger.info('🕸️🦑 No more sitemaps to crawl. Calling it a day... ')
     elif crawl_type == 'harpoon':
