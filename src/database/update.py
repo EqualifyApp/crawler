@@ -86,3 +86,22 @@ def update_crawl_complete(crawl_uuid):
     except:
         logger.error(f'🗄️🔧 Failed to complete crawl {crawl_uuid}')
         return False
+
+def update_sitemap_status(sitemap_id, crawl_id):
+   logger.debug(f'Updating Sitemap Status: {sitemap_id}...')
+   query = """
+      UPDATE targets.sitemaps
+         SET status = 'completed'
+            recent_crawl_id = %s
+         WHERE id = %s
+         RETURNING id;
+   """
+   try:
+      result = execute_update(query, (sitemap_id,))
+      logger.debug(f'Update: {sitemap_id} Updated')
+      return True
+   except:
+      logger.error(f'🗄️🔧 Failed to update Sitemap {sitemap_id}')
+      return False
+
+

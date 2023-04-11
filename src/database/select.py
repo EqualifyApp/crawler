@@ -35,23 +35,42 @@ def execute_select(query, params=None, fetchone=True):
 
     return result
 
+
 def next_sitemap_url():
     query = """
-        SELECT url, domain_id
-        FROM meta.sitemaps
-        WHERE meta.sitemaps.crawl_uuid = '' OR meta.sitemaps.crawl_uuid IS NULL AND active=TRUE
-        ORDER BY
-          CASE WHEN meta.sitemaps.crawl_uuid = '' OR meta.sitemaps.crawl_uuid IS NULL
-            THEN created_at
-            ELSE (SELECT ended_at FROM events.crawls WHERE events.crawls.crawl_uuid = meta.sitemaps.crawl_uuid)
-          END ASC
+        WITH null_crawl AS (
+            SELECT
+                url AS "sitemap_url",
+                id AS "sitemap_id",
+                domain_id
+            FROM targets.sitemaps
+            WHERE recent_crawl_id IS NULL
+            AND active_crawl is TRUE
+            ORDER BY RANDOM()
+            LIMIT 1
+        ),
+        random_row AS (
+            SELECT
+                url AS "sitemap_url",
+                id AS "sitemap_id",
+                domain_id
+            FROM targets.sitemaps
+            WHERE NOT EXISTS (SELECT 1 FROM null_crawl) AND
+                  (current_timestamp - updated_at) > INTERVAL '24 hours'
+                  AND active_crawl is TRUE
+            ORDER BY RANDOM()
+            LIMIT 1
+        )
+        SELECT * FROM null_crawl
+        UNION ALL
+        SELECT * FROM random_row
         LIMIT 1;
     """
-    result = execute_select(query)
+    result = execute_select(query, ())
     if result:
-        url, domain_id = result
-        logger.info(f'🗄️🔍 Sitemap Selected for Domain {domain_id}: {url}')
-        return url, domain_id
+        sitemap_url, sitemap_id, domain_id = result
+        logger.info(f'🗄️🔍 Sitemap Selected for Domain {domain_id}: {sitemap_url}')
+        return sitemap_url, sitemap_id, domain_id
     else:
         logger.error('🗄️🔍 Unable to select sitemap')
         return None, None
@@ -74,6 +93,7 @@ def get_useragent():
         else:
             logger.error('🗄️🔍 No Useragent Returned')
             return None, None
+
 
 
 def select_pending_sitemap_count():
