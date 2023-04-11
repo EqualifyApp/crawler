@@ -1,14 +1,23 @@
-# Base image
-FROM python:3
+# Use an official Python runtime as a parent image
+FROM python:3.9.10
 
-# Set working directory
-WORKDIR /app
+# Set the working directory to /app/src
+WORKDIR /app/src
 
-# Copy script to container
-COPY src/crawl.py .
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-# Install psycopg2 and lxml
-RUN pip install psycopg2 lxml scrapy
+# Upgrade pip
+RUN pip install --upgrade pip
 
-# Run script
-CMD ["python", "crawl.py"]
+# Install any needed packages specified in requirements.txt
+RUN apt-get update && \
+    apt-get install -y libpq-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --trusted-host pypi.python.org -r requirements.txt
+
+# Make port 8084 available to the world outside this container
+EXPOSE 8084
+
+# Run main.py when the container launches
+CMD ["python", "main.py"]
