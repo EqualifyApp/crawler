@@ -48,7 +48,7 @@ def execute_insert(query, params=None, fetchone=True):
         # Execute the query
         cur.execute(query, params)
         conn.commit()   # Removed conn.
-        logger.info("🗄️✏️🟢 Query executed and committed")
+        logger.debug("🗄️✏️🟢 Query executed and committed")
 
         # Fetch the results if requested
         result = None
@@ -89,7 +89,7 @@ def execute_bulk_insert(query, params_list):
         # Execute the query
         with conn:
             cur.executemany(query, params_list)
-            logger.info("🗄️✏️🟢 Query executed and committed")
+            logger.debug("🗄️✏️🟢 Query executed and committed")
     except Exception as e:
         logger.error(f"🗄️✏️ Error executing bulk insert query: {e}\n{traceback.format_exc()}")
 
@@ -160,9 +160,49 @@ def create_new_crawl(crawl_type, sitemap_id, agent, domain_id):
     result = execute_insert(query, (crawl_type, sitemap_id, agent))
     if result:
         crawl_id = result
-        logger.info(f'🗄️🔍 Created new crawl: {crawl_id} ')
+        logger.debug(f'🗄️🔍 Created new crawl: {crawl_id} ')
         return crawl_id
     else:
         logger.error('🗄️🔍 Unable create new crawl')
         return None
 
+
+def create_new_crawl_html(crawl_type, url_id, agent):
+        query = """
+            INSERT INTO events.crawls (
+                crawl_type,
+                url_id,
+                agent
+            )
+            VALUES (
+                %s, %s, %s
+            )
+            RETURNING id as crawl_id;
+            """
+        logger.debug('🗄️ ✏️ Recording New Crawl')
+        result = execute_insert(query, (crawl_type, url_id, agent))
+        if result:
+            crawl_id = result
+            logger.debug(f'🗄️🔍 Created new crawl: {crawl_id} ')
+            return crawl_id
+        else:
+            logger.error('🗄️🔍 Unable create new crawl')
+            return None
+
+
+# Record New URLs found during Rosevelt - HTML - Crawl
+def record_new_crawled_htmls(new_urls):
+    query = """
+        INSERT INTO targets.urls (
+            source_url_id,
+            url,
+            recent_crawl_id
+        )
+        VALUES (
+            %s, %s, %s
+        )
+        ON CONFLICT (url) DO UPDATE SET recent_crawl_id = %s;
+    """
+    params_list = [(entry["source_url_id"], entry["url"], entry["crawl_id"], entry["crawl_id"]) for entry in new_urls]
+    execute_bulk_insert(query, params_list)
+    # TODO-if there is an error, logger.error that things broke

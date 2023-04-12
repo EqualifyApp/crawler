@@ -1,9 +1,33 @@
 import psycopg2
+import json
+import traceback
 from database.access import connection
-from logger.config import logger
-from database.access import connection
+from utils.watch import logger
+from psycopg2.pool import SimpleConnectionPool
 
-# Log Emoji: 🗄️🔧
+# Set use_pooling to True to enable connection pooling
+use_pooling = True
+
+# Connection pool
+pool = None
+
+if use_pooling:
+    conn_params = connection().get_connection_params()
+    pool = SimpleConnectionPool(
+        minconn=1,
+        maxconn=10,
+        **conn_params
+    )
+
+
+
+def connection_pooling():
+    return pool.getconn()
+
+def release_pooling(conn):
+    pool.putconn(conn)
+
+
 
 def execute_update(query, params=None, fetchone=True):
    # logger.debug(f'🗄️🔧 Executing query: {query}'')
@@ -41,6 +65,40 @@ def execute_update(query, params=None, fetchone=True):
 
     return result
 
+# # # # # # # # # #
+
+    # Bulk Updates
+
+    def execute_bulk_update(query, params_list):
+        # Connect to the database
+        if use_pooling:
+            conn = connection_pooling()
+        else:
+            conn = connection()
+            conn.open()
+
+        # Create a cursor
+        cur = conn.cursor()
+
+        try:
+            # Execute the query
+            with conn:
+                cur.executemany(query, params_list)
+                logger.info("🗄️✏️🟢 Query executed and committed")
+        except Exception as e:
+            logger.error(f"🗄️✏️ Error executing bulk insert query: {e}\n{traceback.format_exc()}")
+
+        # Close the cursor and connection
+        cur.close()
+        if use_pooling:
+            release_pooling(conn)
+        else:
+            conn.close()
+
+
+
+#########################################################
+## Queries
 
 
 def update_crawl_status(status, crawl_uuid):

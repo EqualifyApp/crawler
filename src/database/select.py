@@ -111,3 +111,45 @@ def select_pending_sitemap_count():
     result = execute_select(query, (past_time,))
     logger.info(f'{result} Sitemaps to Crawl')
     return result
+
+def next_rosevelt_url():
+    query = """
+        WITH null_crawl AS (
+            SELECT
+                id AS "url_id",
+                url,
+                domain_id
+            FROM targets.urls
+            WHERE crawled_at_rosevelt IS NULL
+            ORDER BY RANDOM()
+            LIMIT 1
+        ),
+        oldest_crawl AS (
+            SELECT
+                id AS "url_id",
+                url,
+                domain_id
+            FROM targets.urls
+            WHERE NOT EXISTS (SELECT 1 FROM null_crawl)
+            ORDER BY crawled_at_rosevelt ASC
+            LIMIT 200
+        ),
+        random_oldest_row AS (
+            SELECT *
+            FROM oldest_crawl
+            ORDER BY RANDOM()
+            LIMIT 1
+        )
+        SELECT * FROM null_crawl
+        UNION ALL
+        SELECT * FROM random_oldest_row
+        LIMIT 1;
+    """
+    result = execute_select(query, ())
+    if result:
+        url_id, url, domain_id = result
+        logger.debug(f'🗄️🔍 URL Selected for Domain {domain_id}: {url}')
+        return url_id, url, domain_id
+    else:
+        logger.error('🗄️🔍 Unable to select URL')
+        return None
